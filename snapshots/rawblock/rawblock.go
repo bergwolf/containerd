@@ -31,6 +31,7 @@ import (
 	"github.com/containerd/containerd/plugin"
 	"github.com/containerd/containerd/snapshots"
 	"github.com/containerd/containerd/snapshots/storage"
+	"golang.org/x/sys/unix"
 
 	"github.com/containerd/continuity/fs"
 	"github.com/pkg/errors"
@@ -67,6 +68,27 @@ type snapshotter struct {
 	ms      *storage.MetaStore
 }
 
+func testCopyFileReflink(source, target string) error {
+	src, err := os.Open(source)
+	if err != nil {
+		return errors.Wrapf(err, "failed to open source %s", source)
+	}
+	defer src.Close()
+	tgt, err := os.Create(target)
+	if err != nil {
+		return errors.Wrapf(err, "failed to open target %s", target)
+	}
+	defer tgt.Close()
+
+	st, err := src.Stat()
+	if err != nil {
+		return errors.Wrap(err, "unable to stat source")
+	}
+	_, err = unix.CopyFileRange(int(src.Fd()), nil, int(tgt.Fd()), nil, int(st.Size()), 0)
+
+	return err
+}
+
 func testReflinkCapability(dir string) (bool, error) {
 	file1 := filepath.Join(dir, "test-reflink-support-src")
 	file2 := filepath.Join(dir, "test-reflink-support-dst")
@@ -75,7 +97,7 @@ func testReflinkCapability(dir string) (bool, error) {
 	}
 	defer os.RemoveAll(file1)
 	defer os.RemoveAll(file2)
-	if _, err := exec.Command("cp", "-a", "--reflink=always", file1, file2).CombinedOutput(); err != nil {
+	if err := testCopyFileReflink(file1, file2); err != nil {
 		return false, nil
 	}
 	return true, nil
@@ -430,8 +452,8 @@ func (o *snapshotter) createBaseImage(ctx context.Context) (baseImage string, er
 }
 
 func (o *snapshotter) copyReflinkImage(source, target string) error {
-	if out, err := exec.Command("cp", "-a", "--reflink=auto", source, target).CombinedOutput(); err != nil {
-		return errors.Errorf("Failed to copy from %s to %s: %v:%s", source, target, err, string(out))
+	if err := fs.CopyFile(target, source); err != nil {
+		return errors.Wrapf(err, "Failed to copy from %s to %s", source, target)
 	}
 
 	return nil
