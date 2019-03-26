@@ -38,20 +38,32 @@ import (
 
 func init() {
 	plugin.Register(&plugin.Registration{
-		Type: plugin.SnapshotPlugin,
-		ID:   "rawblock",
+		Type:   plugin.SnapshotPlugin,
+		ID:     "rawblock",
+		Config: &SnapshotterConfig{},
 		InitFn: func(ic *plugin.InitContext) (interface{}, error) {
 			ic.Meta.Platforms = append(ic.Meta.Platforms, platforms.DefaultSpec())
-			return NewSnapshotter(ic.Context, ic.Root)
+
+			config, ok := ic.Config.(*SnapshotterConfig)
+			if !ok {
+				return nil, errors.New("invalid rawblock config")
+			}
+			config.setDefaults(ic.Root)
+
+			if err := config.validate(); err != nil {
+				return nil, errors.Wrap(err, "invalid rawblock config")
+			}
+
+			return NewSnapshotter(ic.Context, config)
 		},
 	})
 }
 
 type snapshotter struct {
 	root    string
-	sizeMB  int64
+	sizeMB  uint32
 	fstype  string
-	options string
+	options []string
 	ms      *storage.MetaStore
 }
 
@@ -76,15 +88,15 @@ func testReflinkCapability(dir string) (bool, error) {
 // root dir -> Active
 //          -> View
 //          -> Committed
-func NewSnapshotter(ctx context.Context, root string) (snapshots.Snapshotter, error) {
-	if err := os.MkdirAll(root, 0755); err != nil {
+func NewSnapshotter(ctx context.Context, config *SnapshotterConfig) (snapshots.Snapshotter, error) {
+	if err := os.MkdirAll(config.RootPath, 0755); err != nil {
 		return nil, err
 	}
 
 	var (
-		active    = filepath.Join(root, snapshots.KindActive.String())
-		view      = filepath.Join(root, snapshots.KindView.String())
-		committed = filepath.Join(root, snapshots.KindCommitted.String())
+		active    = filepath.Join(config.RootPath, snapshots.KindActive.String())
+		view      = filepath.Join(config.RootPath, snapshots.KindView.String())
+		committed = filepath.Join(config.RootPath, snapshots.KindCommitted.String())
 	)
 
 	for _, path := range []string{
@@ -100,19 +112,20 @@ func NewSnapshotter(ctx context.Context, root string) (snapshots.Snapshotter, er
 	if supported, err := testReflinkCapability(active); err != nil {
 		return nil, errors.Wrap(err, "failed to check host file system reflink capability")
 	} else if !supported {
-		log.G(ctx).Infof("%s doesn't support copy reflink. Snapshot creation can be SLOW!", root)
+		log.G(ctx).Infof("%s doesn't support copy reflink. Snapshot creation can be SLOW!", config.RootPath)
 	}
 
-	ms, err := storage.NewMetaStore(filepath.Join(root, "metadata.db"))
+	ms, err := storage.NewMetaStore(filepath.Join(config.RootPath, "metadata.db"))
 	if err != nil {
 		return nil, err
 	}
 
 	return &snapshotter{
-		root:   root,
-		sizeMB: 1024,
-		fstype: "ext4",
-		ms:     ms,
+		root:    config.RootPath,
+		sizeMB:  config.SizeMB,
+		fstype:  config.FsType,
+		options: config.Options,
+		ms:      ms,
 	}, nil
 }
 
@@ -384,7 +397,7 @@ func (o *snapshotter) createBaseImage(ctx context.Context) (baseImage string, er
 	if err := os.Chmod(base, 0755); err != nil {
 		return "", err
 	}
-	if err := os.Truncate(base, o.sizeMB<<20); err != nil {
+	if err := os.Truncate(base, int64(o.sizeMB<<20)); err != nil {
 		return "", err
 	}
 	switch o.fstype {
@@ -512,11 +525,7 @@ func (o *snapshotter) mounts(s storage.Snapshot) []mount.Mount {
 
 	opts := []string{roFlag, "loop"}
 	if len(o.options) != 0 {
-		opts = append(opts, o.options)
-	}
-	// XFS needs nouuid or it can't mount filesystems with the same fs uuid
-	if o.fstype == "xfs" {
-		opts = append(opts, "nouuid")
+		opts = append(opts, o.options...)
 	}
 
 	return []mount.Mount{

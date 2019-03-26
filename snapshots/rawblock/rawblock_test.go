@@ -63,7 +63,10 @@ func boltSnapshotter(t *testing.T) func(context.Context, string) (snapshots.Snap
 			return nil, nil, errors.Wrapf(err, "failed to mount device %s (out: %q)", deviceName, out)
 		}
 
-		snapshotter, err := NewSnapshotter(ctx, root)
+		config := &SnapshotterConfig{}
+		config.setDefaults(root)
+
+		snapshotter, err := NewSnapshotter(ctx, config)
 		if err != nil {
 			cleanupDevice()
 			return nil, nil, errors.Wrap(err, "failed to create new snapshotter")
