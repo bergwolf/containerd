@@ -33,6 +33,7 @@ service Task {
 	rpc Stats(StatsRequest) returns (StatsResponse);
 	rpc Connect(ConnectRequest) returns (ConnectResponse);
 	rpc Shutdown(ShutdownRequest) returns (google.protobuf.Empty);
+	rpc PullImage(PullImageRequest) returns (PullImageResponse);
 }
 
 message CreateTaskRequest {
@@ -182,4 +183,22 @@ message PauseRequest {
 
 message ResumeRequest {
 	string id = 1;
+}
+
+message AuthConfig {
+       string username = 1;
+       string password = 2;
+       string auth = 3;
+       string server_address = 4;
+       string identity_token = 5;
+       string registry_token = 6;
+}
+
+message PullImageRequest {
+       string image = 1;
+       AuthConfig auth = 2;
+}
+
+message PullImageResponse {
+	string ImageRef = 1;
 }

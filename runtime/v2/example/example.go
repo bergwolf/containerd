@@ -124,6 +124,11 @@ func (s *service) Shutdown(ctx context.Context, r *taskAPI.ShutdownRequest) (*pt
 	return empty, nil
 }
 
+// PullImage pulls the image inside sandbox
+func (s *service) PullImage(ctx context.Context, req *taskAPI.PullImageRequest) (*ptypes.Empty, error) {
+	return nil, errdefs.ErrNotImplemented
+}
+
 // Stats returns container level system stats for a container and its processes
 func (s *service) Stats(ctx context.Context, r *taskAPI.StatsRequest) (*taskAPI.StatsResponse, error) {
 	return nil, errdefs.ErrNotImplemented
