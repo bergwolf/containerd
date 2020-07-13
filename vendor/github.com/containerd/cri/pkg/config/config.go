@@ -240,6 +240,9 @@ type PluginConfig struct {
 	// isolation, security and early detection of issues in the mount configuration when using
 	// ReadOnlyRootFilesystem since containers won't silently mount a temporary volume.
 	IgnoreImageDefinedVolumes bool `toml:"ignore_image_defined_volumes" json:"ignoreImageDefinedVolumes"`
+	// PullImageInsideSandbox asks container runtime to pull images from within the sandbox instead of
+	// on the host. Useful for better isolation, security and accessing registries in user private network.
+	PullImageInsideSandbox bool `toml:"pull_image_inside_sandbox" json:"pullImageInsideSandbox"`
 }
 
 // X509KeyPairStreaming contains the x509 configuration for streaming

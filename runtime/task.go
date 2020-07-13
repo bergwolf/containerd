@@ -75,6 +75,8 @@ type Task interface {
 	Process(context.Context, string) (Process, error)
 	// Stats returns runtime specific metrics for a task
 	Stats(context.Context) (*types.Any, error)
+	// Pull an image
+	Pull(context.Context, string) (string, error)
 }
 
 // ExecOpts provides additional options for additional processes running in a task

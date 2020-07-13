@@ -271,6 +271,26 @@ func (l *local) DeleteProcess(ctx context.Context, r *api.DeleteProcessRequest, 
 	}, nil
 }
 
+func (l *local) Pull(ctx context.Context, r *api.PullRequest, _ ...grpc.CallOption) (*api.PullResponse, error) {
+	container, err := l.getContainer(ctx, r.ID)
+	if err != nil {
+		return nil, errdefs.ToGRPC(err)
+	}
+	rtime, err := l.getRuntime(container.Runtime.Name)
+	if err != nil {
+		return nil, err
+	}
+	c, err := rtime.Get(ctx, r.ID)
+	if err != nil {
+		return nil, errdefs.ToGRPC(err)
+	}
+	ref, err := c.Pull(ctx, r.Image)
+	if err != nil {
+		return nil, errdefs.ToGRPC(err)
+	}
+	return &api.PullResponse{ImageRef: ref}, nil
+}
+
 func getProcessState(ctx context.Context, p runtime.Process) (*task.Process, error) {
 	ctx, cancel := timeout.WithContext(ctx, stateTimeout)
 	defer cancel()

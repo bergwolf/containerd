@@ -554,7 +554,7 @@ func (s *service) Shutdown(ctx context.Context, r *taskAPI.ShutdownRequest) (*pt
 	return empty, nil
 }
 
-func (s *service) PullImage(ctx context.Context, req *taskAPI.PullImageRequest) (*ptypes.Empty, error) {
+func (s *service) PullImage(ctx context.Context, req *taskAPI.PullImageRequest) (*taskAPI.PullImageResponse, error) {
 	return nil, errdefs.ToGRPCf(errdefs.ErrNotImplemented, "pull image inside sandbox is not supported")
 }
 

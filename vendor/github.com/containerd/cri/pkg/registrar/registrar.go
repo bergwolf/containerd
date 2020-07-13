@@ -100,3 +100,19 @@ func (r *Registrar) ReleaseByKey(key string) {
 	delete(r.nameToKey, name)
 	delete(r.keyToName, key)
 }
+
+// LookupByKey finds the reserved name by key.
+func (r *Registrar) LookupByKey(key string) string {
+	r.lock.Lock()
+	defer r.lock.Unlock()
+
+	return r.keyToName[key]
+}
+
+// LookupByName finds the reserved key by name.
+func (r *Registrar) LookupByName(name string) string {
+	r.lock.Lock()
+	defer r.lock.Unlock()
+
+	return r.nameToKey[name]
+}

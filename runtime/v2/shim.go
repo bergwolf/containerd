@@ -473,3 +473,14 @@ func (s *shim) State(ctx context.Context) (runtime.State, error) {
 		ExitedAt:   response.ExitedAt,
 	}, nil
 }
+
+func (s *shim) Pull(ctx context.Context, image string) (string, error) {
+	resp, err := s.task.PullImage(ctx, &task.PullImageRequest{
+		Image: image,
+	})
+	if err != nil {
+		return "", errdefs.FromGRPC(err)
+	}
+	return resp.ImageRef, nil
+
+}

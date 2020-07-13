@@ -364,3 +364,8 @@ func (t *Task) Wait(ctx context.Context) (*runtime.Exit, error) {
 		Status:    r.ExitStatus,
 	}, nil
 }
+
+// Pull an image, unsupported
+func (t *Task) Pull(ctx context.Context, image string) (string, error) {
+	return "", errors.New("pulling image inside sandbox is not supported")
+}

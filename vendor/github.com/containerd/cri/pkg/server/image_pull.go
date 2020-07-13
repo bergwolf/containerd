@@ -29,6 +29,7 @@ import (
 	"time"
 
 	"github.com/containerd/containerd"
+	api "github.com/containerd/containerd/api/services/tasks/v1"
 	"github.com/containerd/containerd/errdefs"
 	containerdimages "github.com/containerd/containerd/images"
 	"github.com/containerd/containerd/log"
@@ -87,6 +88,9 @@ import (
 
 // PullImage pulls an image with authentication config.
 func (c *criService) PullImage(ctx context.Context, r *runtime.PullImageRequest) (*runtime.PullImageResponse, error) {
+	if c.config.PullImageInsideSandbox {
+		return c.sandboxPullImage(ctx, r)
+	}
 	imageRef := r.GetImage().GetImage()
 	namedRef, err := distribution.ParseDockerRef(imageRef)
 	if err != nil {
@@ -162,6 +166,25 @@ func (c *criService) PullImage(ctx context.Context, r *runtime.PullImageRequest)
 	// check the actual state in containerd before using the image or returning status of the
 	// image.
 	return &runtime.PullImageResponse{ImageRef: imageID}, nil
+}
+
+func (c *criService) sandboxPullImage(ctx context.Context, r *runtime.PullImageRequest) (*runtime.PullImageResponse, error) {
+	//ociRuntime, err := c.getSandboxRuntime(r.GetSandboxConfig(), r.GetRuntimeHandler())
+	metadata := r.GetSandboxConfig().GetMetadata()
+	if metadata == nil {
+		return nil, errors.New("sandbox config must include metadata")
+	}
+	name := makeSandboxName(metadata)
+	cid := c.sandboxNameIndex.LookupByName(name)
+	if len(cid) == 0 {
+		return nil, errors.New("cannot find sandbox")
+	}
+
+	resp, err := c.client.TaskService().Pull(ctx, &api.PullRequest{ID: cid, Image: r.GetImage().Image, Auth: &api.AuthConfig{}})
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to pull image %s", r.GetImage())
+	}
+	return &runtime.PullImageResponse{ImageRef: resp.ImageRef}, nil
 }
 
 // ParseAuth parses AuthConfig and returns username and password/secret required by containerd.
