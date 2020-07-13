@@ -51,6 +51,8 @@ service Tasks {
 	rpc Metrics(MetricsRequest) returns (MetricsResponse);
 
 	rpc Wait(WaitRequest) returns (WaitResponse);
+
+	rpc Pull(PullRequest) returns (PullResponse);
 }
 
 message CreateTaskRequest {
@@ -206,4 +208,24 @@ message WaitRequest {
 message WaitResponse {
 	uint32 exit_status = 1;
 	google.protobuf.Timestamp exited_at = 2 [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
+}
+
+// FIXME: this should live in github.com/containerd/containerd/api/types
+message AuthConfig {
+	string username = 1;
+	string password = 2;
+	string auth = 3;
+	string server_address = 4;
+	string identity_token = 5;
+	string registry_toekn = 6;
+}
+
+message PullRequest {
+	string id = 1;
+	string image = 2;
+	AuthConfig auth = 3;
+}
+
+message PullResponse {
+	string image_ref = 1;
 }

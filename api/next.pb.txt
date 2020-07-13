@@ -4278,6 +4278,86 @@ file {
       json_name: "exitedAt"
     }
   }
+  message_type {
+    name: "AuthConfig"
+    field {
+      name: "username"
+      number: 1
+      label: LABEL_OPTIONAL
+      type: TYPE_STRING
+      json_name: "username"
+    }
+    field {
+      name: "password"
+      number: 2
+      label: LABEL_OPTIONAL
+      type: TYPE_STRING
+      json_name: "password"
+    }
+    field {
+      name: "auth"
+      number: 3
+      label: LABEL_OPTIONAL
+      type: TYPE_STRING
+      json_name: "auth"
+    }
+    field {
+      name: "server_address"
+      number: 4
+      label: LABEL_OPTIONAL
+      type: TYPE_STRING
+      json_name: "serverAddress"
+    }
+    field {
+      name: "identity_token"
+      number: 5
+      label: LABEL_OPTIONAL
+      type: TYPE_STRING
+      json_name: "identityToken"
+    }
+    field {
+      name: "registry_toekn"
+      number: 6
+      label: LABEL_OPTIONAL
+      type: TYPE_STRING
+      json_name: "registryToekn"
+    }
+  }
+  message_type {
+    name: "PullRequest"
+    field {
+      name: "id"
+      number: 1
+      label: LABEL_OPTIONAL
+      type: TYPE_STRING
+      json_name: "id"
+    }
+    field {
+      name: "image"
+      number: 2
+      label: LABEL_OPTIONAL
+      type: TYPE_STRING
+      json_name: "image"
+    }
+    field {
+      name: "auth"
+      number: 3
+      label: LABEL_OPTIONAL
+      type: TYPE_MESSAGE
+      type_name: ".containerd.services.tasks.v1.AuthConfig"
+      json_name: "auth"
+    }
+  }
+  message_type {
+    name: "PullResponse"
+    field {
+      name: "image_ref"
+      number: 1
+      label: LABEL_OPTIONAL
+      type: TYPE_STRING
+      json_name: "imageRef"
+    }
+  }
   service {
     name: "Tasks"
     method {
@@ -4364,6 +4444,11 @@ file {
       name: "Wait"
       input_type: ".containerd.services.tasks.v1.WaitRequest"
       output_type: ".containerd.services.tasks.v1.WaitResponse"
+    }
+    method {
+      name: "Pull"
+      input_type: ".containerd.services.tasks.v1.PullRequest"
+      output_type: ".containerd.services.tasks.v1.PullResponse"
     }
   }
   options {
